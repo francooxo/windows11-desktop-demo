@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Windows 11 Pro</title>
+<style>
+  :root {
+    --accent: #0078d4;
+    --taskbar-bg: rgba(32, 32, 32, 0.85);
+    --start-bg: rgba(30, 30, 30, 0.97);
+    --tile-bg: rgba(255, 255, 255, 0.06);
+    --tile-hover: rgba(255, 255, 255, 0.12);
+    --text: #f3f3f3;
+    --text-dim: #b3b3b3;
+    --win-bg: #202020;
+    --win-border: #3a3a3a;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: "Segoe UI", "Segoe UI Variable", Arial, sans-serif;
+    color: var(--text);
+    overflow: hidden;
+    user-select: none;
+  }
+
+  /* ---------- Desktop ---------- */
+  .desktop {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(180deg, #2a6bb5 0%, #4f97d6 45%, #bfe3f5 100%);
+  }
+
+  .desktop::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(circle at 70% 30%, rgba(255,255,255,0.18), transparent 55%);
+  }
+
+  /* Desktop icons */
+  .icons {
+    position: absolute;
+    top: 24px;
+    left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    z-index: 1;
+  }
+
+  .icon {
+    width: 76px;
+    text-align: center;
+    cursor: pointer;
+    padding: 6px 4px;
+    border-radius: 4px;
+    background: none;
+    border: none;
+    color: var(--text);
+  }
+
+  .icon:hover, .icon:focus-visible { background: rgba(255,255,255,0.14); outline: none; }
+  .icon.selected { background: rgba(255,255,255,0.18); outline: 1px dashed rgba(255,255,255,0.5); }
+
+  .icon .glyph {
+    width: 36px;
+    height: 36px;
+    margin: 0 auto 6px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+  }
+
+  .icon .label {
+    font-size: 12px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+  }
+
+  .glyph.recycle { background: #5b6b73; }
+  .glyph.edge { background: #0a64c2; }
+  .glyph.folder { background: #f6c244; color: #5a4300; }
+  .glyph.notepad { background: #4a4a4a; }
+  .glyph.settings { background: #5a5a5a; }
+
+  /* ---------- Windows (generic app window) ---------- */
+  .app-window {
+    position: absolute;
+    width: 520px;
+    background: var(--win-bg);
+    border: 1px solid var(--win-border);
+    border-radius: 10px;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.45);
+    overflow: hidden;
+    z-index: 5;
+    display: none;
+  }
+
+  .app-window.open { display: block; }
+  .app-window.minimized { display: none; }
+  .app-window.maximized {
+    width: 100vw !important;
+    height: calc(100vh - 48px) !important;
+    top: 0 !important;
+    left: 0 !important;
+    border-radius: 0;
+  }
+
+  .titlebar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 0 0 14px;
+    height: 36px;
+    background: #2b2b2b;
+    border-bottom: 1px solid var(--win-border);
+    cursor: move;
+  }
+
+  .titlebar .title {
+    font-size: 13px;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    pointer-events: none;
+  }
+
+  .titlebar .controls { display: flex; height: 100%; }
+
+  .titlebar button {
+    width: 46px;
+    height: 36px;
+    border: none;
+    background: transparent;
+    color: var(--text-dim);
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .titlebar button:hover { background: #3a3a3a; }
+  .titlebar button.close:hover { background: #e81123; color: #fff; }
+
+  .window-body {
+    padding: 26px 24px 28px;
+    max-height: 70vh;
+    overflow: auto;
+  }
+
+  .app-window.maximized .window-body { max-height: calc(100vh - 84px); height: 100%; }
+
+  .window-body h2 { margin: 0 0 6px; font-size: 20px; font-weight: 600; }
+  .window-body p { margin: 0 0 18px; color: var(--text-dim); font-size: 13px; line-height: 1.5; }
+
+  .spec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 18px; font-size: 13px; }
+  .spec-grid div { color: var(--text-dim); }
+  .spec-grid strong { color: var(--text); font-weight: 600; }
+
+  /* Notepad */
+  .notepad-area {
+    width: 100%;
+    height: 320px;
+    background: #1a1a1a;
+    color: var(--text);
+    border: 1px solid var(--win-border);
+    border-radius: 4px;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 14px;
+    padding: 10px;
+    resize: vertical;
+    user-select: text;
+  }
+
+  /* Calculator */
+  .calc-display {
+    background: #111;
+    border-radius: 6px;
+    padding: 18px 14px;
+    text-align: right;
+    font-size: 30px;
+    margin-bottom: 12px;
+    min-height: 44px;
+    overflow: hidden;
+    word-break: break-all;
+  }
+  .calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .calc-btn {
+    padding: 16px 0;
+    font-size: 16px;
+    border: none;
+    border-radius: 6px;
+    background: #333;
+    color: var(--text);
+    cursor: pointer;
+  }
+  .calc-btn:hover { background: #444; }
+  .calc-btn.op { background: #3a3a3a; color: #6cb4ff; }
+  .calc-btn.eq { background: var(--accent); color: #fff; }
+  .calc-btn.eq:hover { background: #1e8ae0; }
+  .calc-btn.clear { background: #553333; }
+
+  /* Settings */
+  .settings-list { display: flex; flex-direction: column; gap: 2px; }
+  .settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 4px;
+    border-bottom: 1px solid #2c2c2c;
+    font-size: 13px;
+  }
+  .settings-row .row-label { display: flex; align-items: center; gap: 12px; }
+  .toggle {
+    width: 40px;
+    height: 22px;
+    border-radius: 12px;
+    background: #555;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .toggle.on { background: var(--accent); }
+  .toggle .dot {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    transition: left 0.15s ease;
+  }
+  .toggle.on .dot { left: 20px; }
+
+  .accent-swatches { display: flex; gap: 8px; margin-top: 6px; }
+  .swatch {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+  }
+  .swatch.selected { border-color: #fff; }
+
+  /* File Explorer */
+  .explorer-body { display: flex; gap: 0; padding: 0; max-height: 360px; }
+  .explorer-sidebar {
+    width: 150px;
+    background: #1b1b1b;
+    padding: 14px 10px;
+    border-right: 1px solid var(--win-border);
+    font-size: 13px;
+  }
+  .explorer-sidebar div { padding: 7px 8px; border-radius: 4px; cursor: pointer; color: var(--text-dim); }
+  .explorer-sidebar div:hover, .explorer-sidebar div.active { background: rgba(255,255,255,0.08); color: var(--text); }
+  .explorer-main { flex: 1; padding: 16px; }
+  .file-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .file-item { text-align: center; cursor: pointer; padding: 8px 4px; border-radius: 4px; }
+  .file-item:hover { background: rgba(255,255,255,0.06); }
+  .file-item .f-glyph { font-size: 26px; margin-bottom: 6px; }
+  .file-item .f-name { font-size: 11px; color: var(--text-dim); }
+
+  /* Browser */
+  .browser-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #262626;
+    border-bottom: 1px solid var(--win-border);
+  }
+  .browser-bar .addr {
+    flex: 1;
+    background: #1a1a1a;
+    border-radius: 14px;
+    padding: 6px 14px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .browser-content { padding: 40px 30px; text-align: center; }
+  .browser-content .b-logo { font-size: 40px; margin-bottom: 14px; }
+
+  /* ---------- Taskbar ---------- */
+  .taskbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 48px;
+    background: var(--taskbar-bg);
+    backdrop-filter: blur(20px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .taskbar-center { display: flex; align-items: center; gap: 4px; }
+
+  .task-btn {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 17px;
+    color: var(--text);
+  }
+
+  .task-btn:hover { background: rgba(255,255,255,0.08); }
+  .task-btn.active { background: rgba(255,255,255,0.1); }
+  .task-btn.running::after {
+    content: "";
+    position: absolute;
+    bottom: 3px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 5px;
+    height: 3px;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+
+  .start-btn { font-size: 19px; }
+
+  .tray {
+    position: absolute;
+    right: 14px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  .tray-icon { cursor: pointer; padding: 6px; border-radius: 4px; }
+  .tray-icon:hover { background: rgba(255,255,255,0.08); }
+
+  .clock { text-align: right; line-height: 1.3; cursor: default; padding: 4px 8px; border-radius: 4px; }
+  .clock:hover { background: rgba(255,255,255,0.08); }
+
+  /* ---------- Start menu ---------- */
+  .start-menu {
+    position: fixed;
+    bottom: 56px;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    width: 560px;
+    max-width: 92vw;
+    background: var(--start-bg);
+    backdrop-filter: blur(24px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    box-shadow: 0 24px 70px rgba(0,0,0,0.5);
+    padding: 26px 26px 18px;
+    z-index: 60;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.16s ease, transform 0.16s ease;
+  }
+
+  .start-menu.open { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
+
+  .search-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 6px;
+    padding: 9px 14px;
+    margin-bottom: 22px;
+    font-size: 13px;
+    color: var(--text-dim);
+    border: none;
+    width: 100%;
+    color: var(--text);
+  }
+  .search-box::placeholder { color: var(--text-dim); }
+
+  .section-label { font-size: 13px; color: var(--text-dim); margin-bottom: 12px; display: flex; justify-content: space-between; }
+  .section-label span:last-child { cursor: pointer; }
+  .section-label span:last-child:hover { color: var(--text); }
+
+  .tile-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 24px; }
+
+  .tile {
+    background: var(--tile-bg);
+    border-radius: 8px;
+    padding: 14px 4px 8px;
+    text-align: center;
+    cursor: pointer;
+    border: none;
+    color: var(--text);
+  }
+
+  .tile:hover, .tile:focus-visible { background: var(--tile-hover); outline: none; }
+  .tile .t-glyph { font-size: 20px; margin-bottom: 8px; }
+  .tile .t-label { font-size: 11px; color: var(--text-dim); }
+
+  .recommended { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .rec-item { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 6px; cursor: pointer; border: none; background: none; text-align: left; color: var(--text); }
+  .rec-item:hover { background: rgba(255,255,255,0.06); }
+  .rec-glyph { width: 32px; height: 32px; border-radius: 4px; background: rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+  .rec-text { font-size: 12px; line-height: 1.3; }
+  .rec-text .rec-time { color: var(--text-dim); font-size: 11px; }
+
+  .start-footer { margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: space-between; }
+  .user-chip { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  .avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; }
+  .power-btn { width: 34px; height: 34px; border-radius: 6px; border: none; background: transparent; color: var(--text); cursor: pointer; font-size: 16px; }
+  .power-btn:hover { background: rgba(255,255,255,0.08); }
+
+  /* Power menu */
+  .power-menu {
+    position: fixed;
+    bottom: 56px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--start-bg);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    box-shadow: 0 24px 70px rgba(0,0,0,0.5);
+    padding: 6px;
+    z-index: 70;
+    display: none;
+    min-width: 180px;
+  }
+  .power-menu.open { display: block; }
+  .power-menu button {
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    color: var(--text);
+    padding: 10px 12px;
+    font-size: 13px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .power-menu button:hover { background: rgba(255,255,255,0.08); }
+
+  /* Shutdown overlay */
+  .shutdown-overlay {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 24px;
+    color: #fff;
+  }
+  .shutdown-overlay.active { display: flex; }
+  .spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid rgba(255,255,255,0.25);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .boot-btn {
+    margin-top: 10px;
+    padding: 10px 22px;
+    background: var(--accent);
+    border: none;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 13px;
+    cursor: pointer;
+    display: none;
+  }
+
+  /* Notification toast */
+  .toast {
+    position: fixed;
+    bottom: 60px;
+    right: 16px;
+    background: var(--start-bg);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 14px 16px;
+    width: 280px;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.4);
+    z-index: 80;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: none;
+    font-size: 13px;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast .t-title { font-weight: 600; margin-bottom: 4px; }
+  .toast .t-body { color: var(--text-dim); }
+
+  /* Visible focus for accessibility */
+  button:focus-visible, .icon:focus-visible { outline: 2px solid #ffffff; outline-offset: 2px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .start-menu, .toast { transition: none; }
+  }
+
+  @media (max-width: 640px) {
+    .app-window { width: 92vw !important; left: 4vw !important; }
+    .tile-grid { grid-template-columns: repeat(4, 1fr); }
+    .start-menu { width: 92vw; padding: 18px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="desktop" id="desktop">
+
+  <div class="icons" id="desktopIcons">
+    <button class="icon" data-app="recycle">
+      <div class="glyph recycle">🗑️</div>
+      <div class="label">Recycle Bin</div>
+    </button>
+    <button class="icon" data-app="edge">
+      <div class="glyph edge">🌐</div>
+      <div class="label">Edge</div>
+    </button>
+    <button class="icon" data-app="explorer">
+      <div class="glyph folder">📁</div>
+      <div class="label">This PC</div>
+    </button>
+    <button class="icon" data-app="notepad">
+      <div class="glyph notepad">📝</div>
+      <div class="label">Notepad</div>
+    </button>
+  </div>
+
+  <!-- ===== System Properties (This PC) ===== -->
+  <div class="app-window" id="win-explorer" style="top:8%; left:18%;">
+    <div class="titlebar" data-drag="win-explorer">
+      <div class="title">📁&nbsp; This PC</div>
+      <div class="controls">
+        <button aria-label="Minimize" onclick="minimizeWin('win-explorer')">&#8211;</button>
+        <button aria-label="Maximize" onclick="maximizeWin('win-explorer')">&#9633;</button>
+        <button class="close" aria-label="Close" onclick="closeWin('win-explorer')">&#10005;</button>
+      </div>
+    </div>
+    <div class="explorer-body">
+      <div class="explorer-sidebar">
+        <div class="active">🏠 Home</div>
+        <div>🖥️ Desktop</div>
+        <div>📄 Documents</div>
+        <div>⬇️ Downloads</div>
+        <div>🖼️ Pictures</div>
+        <div>🎵 Music</div>
+      </div>
+      <div class="explorer-main">
+        <div class="file-grid">
+          <div class="file-item"><div class="f-glyph">📁</div><div class="f-name">Documents</div></div>
+          <div class="file-item"><div class="f-glyph">📁</div><div class="f-name">Pictures</div></div>
+          <div class="file-item"><div class="f-glyph">📁</div><div class="f-name">Downloads</div></div>
+          <div class="file-item" onclick="openWin('win-properties')"><div class="f-glyph">💻</div><div class="f-name">Properties</div></div>
+          <div class="file-item"><div class="f-glyph">💽</div><div class="f-name">Local Disk (C:)</div></div>
+          <div class="file-item"><div class="f-glyph">📄</div><div class="f-name">notes.txt</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== System Properties detail window ===== -->
+  <div class="app-window" id="win-properties" style="top:14%; left:28%;">
+    <div class="titlebar" data-drag="win-properties">
+      <div class="title">💻&nbsp; System Properties</div>
+      <div class="controls">
+        <button aria-label="Minimize" onclick="minimizeWin('win-properties')">&#8211;</button>
+        <button aria-label="Maximize" onclick="maximizeWin('win-properties')">&#9633;</button>
+        <button class="close" aria-label="Close" onclick="closeWin('win-properties')">&#10005;</button>
+      </div>
+    </div>
+    <div class="window-body">
+      <h2>Windows 11 Pro</h2>
+      <p>Activated, ready to use. Built for the way you work, with security and management features for business.</p>
+      <div class="spec-grid">
+        <div>Edition <br><strong>Windows 11 Pro</strong></div>
+        <div>Version <br><strong>24H2</strong></div>
+        <div>Processor <br><strong>Intel Core i7, 2.8 GHz</strong></div>
+        <div>Installed RAM <br><strong>16.0 GB</strong></div>
+        <div>System type <br><strong>64-bit OS, x64</strong></div>
+        <div>Activation <br><strong>Active</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Notepad ===== -->
+  <div class="app-window" id="win-notepad" style="top:10%; left:32%;">
+    <div class="titlebar" data-drag="win-notepad">
+      <div class="title">📝&nbsp; <span id="notepadTitle">Untitled - Notepad</span></div>
+      <div class="controls">
+        <button aria-label="Minimize" onclick="minimizeWin('win-notepad')">&#8211;</button>
+        <button aria-label="Maximize" onclick="maximizeWin('win-notepad')">&#9633;</button>
+        <button class="close" aria-label="Close" onclick="closeWin('win-notepad')">&#10005;</button>
+      </div>
+    </div>
+    <div class="window-body">
+      <textarea class="notepad-area" id="notepadArea" placeholder="Type here..." oninput="document.getElementById('notepadTitle').textContent = (this.value.length ? '*' : '') + 'Untitled - Notepad'"></textarea>
+    </div>
+  </div>
+
+  <!-- ===== Calculator ===== -->
+  <div class="app-window" id="win-calc" style="top:16%; left:40%; width:280px;">
+    <div class="titlebar" data-drag="win-calc">
+      <div class="title">🧮&nbsp; Calculator</div>
+      <div class="controls">
+        <button aria-label="Minimize" onclick="minimizeWin('win-calc')">&#8211;</button>
+        <button class="close" aria-label="Close" onclick="closeWin('win-calc')">&#10005;</button>
+      </div>
+    </div>
+    <div class="window-body">
+      <div class="calc-display" id="calcDisplay">0</div>
+      <div class="calc-grid">
+        <button class="calc-btn clear" onclick="calcClear()">C</button>
+        <button class="calc-btn op" onclick="calcInput('(')">(</button>
+        <button class="calc-btn op" onclick="calcInput(')')">)</button>
+        <button class="calc-btn op" onclick="calcInput('/')">÷</button>
+
+        <button class="calc-btn" onclick="calcInput('7')">7</button>
+        <button class="calc-btn" onclick="calcInput('8')">8</button>
+        <button class="calc-btn" onclick="calcInput('9')">9</button>
+        <button class="calc-btn op" onclick="calcInput('*')">×</button>
+
+        <button class="calc-btn" onclick="calcInput('4')">4</button>
+        <button class="calc-btn" onclick="calcInput('5')">5</button>
+        <button class="calc-btn" onclick="calcInput('6')">6</button>
+        <button class="calc-btn op" onclick="calcInput('-')">−</button>
+
+        <button class="calc-btn" onclick="calcInput('1')">1</button>
+        <button class="calc-btn" onclick="calcInput('2')">2</button>
+        <button class="calc-btn" onclick="calcInput('3')">3</button>
+        <button class="calc-btn op" onclick="calcInput('+')">+</button>
+
+        <button class="calc-btn" onclick="calcInput('0')" style="grid-column: span 2;">0</button>
+        <button class="calc-btn" onclick="calcInput('.')">.</button>
+        <button class="calc-btn eq" onclick="calcEquals()">=</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Settings ===== -->
+  <div class="app-window" id="win-settings" style="top:9%; left:24%; width:460px;">
+    <div class="titlebar" data-drag="win-settings">
+      <div class="title">⚙️&nbsp; Settings</div>
+      <div class="controls">
+        <button aria-label="Minimize" onclick="minimizeWin('win-settings')">&#8211;</button>
+        <button aria-label="Maximize" onclick="maximizeWin('win-settings')">&#9633;</button>
+        <button class="close" aria-label="Close" onclick="closeWin('win-settings')">&#10005;</button>
+      </div>
+    </div>
+    <div class="window-body">
+      <h2>System</h2>
+      <div class="settings-list">
+        <div class="settings-row">
+          <div class="row-label">🌙 Dark mode</div>
+          <button class="toggle on" id="toggleDark" onclick="toggleSetting(this, themeChange)"><span class="dot"></span></button>
+        </div>
+        <div class="settings-row">
+          <div class="row-label">📶 Wi-Fi</div>
+          <button class="toggle on" id="toggleWifi" onclick="toggleSetting(this)"><span class="dot"></span></button>
+        </div>
+        <div class="settings-row">
+          <div class="row-label">🔵 Bluetooth</div>
+          <button class="toggle" id="toggleBt" onclick="toggleSetting(this)"><span class="dot"></span></button>
+        </div>
+        <div class="settings-row">
+          <div class="row-label">✈️ Airplane mode</div>
+          <button class="toggle" id="toggleAirplane" onclick="toggleSetting(this)"><span class="dot"></span></button>
+        </div>
+        <div class="settings-row" style="display:block;">
+          <div class="row-label" style="margin-bottom:10px;">🎨 Accent color</div>
+          <div class="accent-swatches">
+            <button class="swatch selected" style="background:#0078d4" onclick="setAccent('#0078d4', this)"></button>
+            <button class="swatch" style="background:#9b59d4" onclick="setAccent('#9b59d4', this)"></button>
+            <button class="swatch" style="background:#e8635a" onclick="setAccent('#e8635a', this)"></button>
+            <button class="swatch" style="background:#2ea043" onclick="setAccent('#2ea043', this)"></button>
+            <button class="swatch" style="background:#e8a33d" onclick="setAccent('#e8a33d', this)"></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Edge browser ===== -->
+  <div class="app-window" id="win-edge" style="top:7%; left:14%; width:600px;">
+    <div class="titlebar" data-drag="win-edge">
+      <div class="title">🌐&nbsp; Microsoft Edge</div>
+      <div class="controls">
+        <button aria-label="Minimize" onclick="minimizeWin('win-edge')">&#8211;</button>
+        <button aria-label="Maximize" onclick="maximizeWin('win-edge')">&#9633;</button>
+        <button class="close" aria-label="Close" onclick="closeWin('win-edge')">&#10005;</button>
+      </div>
+    </div>
+    <div class="browser-bar">
+      <span>←</span><span>→</span><span>⟳</span>
+      <div class="addr">🔒 www.bing.com</div>
+    </div>
+    <div class="browser-content">
+      <div class="b-logo">🌐</div>
+      <h2>This page is just for show</h2>
+      <p>This is a mock browser window inside a desktop demo &mdash; it isn't connected to the internet.</p>
+    </div>
+  </div>
+
+  <!-- ===== Recycle Bin ===== -->
+  <div class="app-window" id="win-recycle" style="top:20%; left:36%;">
+    <div class="titlebar" data-drag="win-recycle">
+      <div class="title">🗑️&nbsp; Recycle Bin</div>
+      <div class="controls">
+        <button aria-label="Minimize" onclick="minimizeWin('win-recycle')">&#8211;</button>
+        <button class="close" aria-label="Close" onclick="closeWin('win-recycle')">&#10005;</button>
+      </div>
+    </div>
+    <div class="window-body">
+      <h2>Recycle Bin is empty</h2>
+      <p>Items you delete will appear here before they're permanently removed.</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- Start menu -->
+<div class="start-menu" id="startMenu">
+  <input class="search-box" id="searchBox" placeholder="🔍  Type here to search" oninput="filterTiles(this.value)">
+
+  <div class="section-label"><span>Pinned</span><span>All apps &gt;</span></div>
+  <div class="tile-grid" id="tileGrid">
+    <button class="tile" data-app="edge" data-name="edge"><div class="t-glyph">🌐</div><div class="t-label">Edge</div></button>
+    <button class="tile" data-app="explorer" data-name="explorer"><div class="t-glyph">📁</div><div class="t-label">Explorer</div></button>
+    <button class="tile" data-app="mail" data-name="mail"><div class="t-glyph">📧</div><div class="t-label">Mail</div></button>
+    <button class="tile" data-app="notepad" data-name="notepad"><div class="t-glyph">🗒️</div><div class="t-label">Notepad</div></button>
+    <button class="tile" data-app="settings" data-name="settings"><div class="t-glyph">⚙️</div><div class="t-label">Settings</div></button>
+    <button class="tile" data-app="store" data-name="store"><div class="t-glyph">🛍️</div><div class="t-label">Store</div></button>
+    <button class="tile" data-app="camera" data-name="camera"><div class="t-glyph">📷</div><div class="t-label">Camera</div></button>
+    <button class="tile" data-app="media" data-name="media player"><div class="t-glyph">🎵</div><div class="t-label">Media Player</div></button>
+    <button class="tile" data-app="calc" data-name="calculator"><div class="t-glyph">🧮</div><div class="t-label">Calculator</div></button>
+    <button class="tile" data-app="calendar" data-name="calendar"><div class="t-glyph">📅</div><div class="t-label">Calendar</div></button>
+    <button class="tile" data-app="word" data-name="word"><div class="t-glyph">📝</div><div class="t-label">Word</div></button>
+    <button class="tile" data-app="excel" data-name="excel"><div class="t-glyph">📊</div><div class="t-label">Excel</div></button>
+  </div>
+
+  <div class="section-label"><span>Recommended</span><span>More &gt;</span></div>
+  <div class="recommended">
+    <button class="rec-item" onclick="openWin('win-notepad'); toggleStart()">
+      <div class="rec-glyph">📄</div>
+      <div class="rec-text">Quarterly-report.docx<br><span class="rec-time">2h ago</span></div>
+    </button>
+    <button class="rec-item" onclick="openWin('win-explorer'); toggleStart()">
+      <div class="rec-glyph">🖼️</div>
+      <div class="rec-text">vacation-photo.png<br><span class="rec-time">Yesterday</span></div>
+    </button>
+  </div>
+
+  <div class="start-footer">
+    <div class="user-chip">
+      <div class="avatar">F</div>
+      Franco
+    </div>
+    <button class="power-btn" aria-label="Power" onclick="togglePowerMenu(event)">⏻</button>
+  </div>
+</div>
+
+<!-- Power menu -->
+<div class="power-menu" id="powerMenu">
+  <button onclick="doSleep()">🌙 Sleep</button>
+  <button onclick="doShutdown()">⏻ Shut down</button>
+  <button onclick="doRestart()">🔄 Restart</button>
+</div>
+
+<!-- Taskbar -->
+<div class="taskbar">
+  <div class="taskbar-center" id="taskbarCenter">
+    <button class="task-btn" aria-label="Search" onclick="toggleStart()">🔍</button>
+    <button class="task-btn start-btn active" id="startBtn" aria-label="Start" onclick="toggleStart()">⊞</button>
+    <button class="task-btn" data-app="explorer" aria-label="File Explorer" onclick="openWin('win-explorer')">📁</button>
+    <button class="task-btn" data-app="edge" aria-label="Edge" onclick="openWin('win-edge')">🌐</button>
+    <button class="task-btn" data-app="mail" aria-label="Mail" onclick="notify('Mail', 'No new messages.')">📧</button>
+  </div>
+  <div class="tray">
+    <span class="tray-icon" onclick="notify('Sound', 'Volume is at 70%.')">🔊</span>
+    <span class="tray-icon" onclick="notify('Network', 'Connected to Wi-Fi.')">📶</span>
+    <span class="tray-icon" onclick="notify('Battery', '82% remaining, plugged in.')">🔋</span>
+    <div class="clock" id="clock" onclick="notify('Calendar', new Date().toDateString())">12:00 PM<br>6/19/2026</div>
+  </div>
+</div>
+
+<!-- Toast notification -->
+<div class="toast" id="toast">
+  <div class="t-title" id="toastTitle"></div>
+  <div class="t-body" id="toastBody"></div>
+</div>
+
+<!-- Shutdown overlay -->
+<div class="shutdown-overlay" id="shutdownOverlay">
+  <div class="spinner" id="shutdownSpinner"></div>
+  <div id="shutdownText">Shutting down...</div>
+  <button class="boot-btn" id="bootBtn" onclick="rebootSystem()">Turn on PC</button>
+</div>
+
+<script>
+  /* ---------------- App registry ---------------- */
+  const appMap = {
+    explorer: 'win-explorer',
+    notepad: 'win-notepad',
+    calc: 'win-calc',
+    settings: 'win-settings',
+    edge: 'win-edge',
+    recycle: 'win-recycle'
+  };
+
+  let zCounter = 10;
+
+  function bringToFront(winEl) {
+    zCounter++;
+    winEl.style.zIndex = zCounter;
+  }
+
+  function openWin(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.add('open');
+    el.classList.remove('minimized');
+    bringToFront(el);
+    closeStartMenu();
+    syncTaskbar();
+  }
+
+  function closeWin(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove('open');
+    el.classList.remove('maximized');
+    syncTaskbar();
+  }
+
+  function minimizeWin(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.add('minimized');
+    syncTaskbar();
+  }
+
+  function maximizeWin(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.toggle('maximized');
+  }
+
+  function toggleApp(appKey) {
+    const id = appMap[appKey];
+    if (!id) {
+      notify(appKey.charAt(0).toUpperCase() + appKey.slice(1), 'This app is not installed in the demo yet.');
+      closeStartMenu();
+      return;
+    }
+    const el = document.getElementById(id);
+    if (el.classList.contains('open') && !el.classList.contains('minimized')) {
+      minimizeWin(id);
+    } else {
+      openWin(id);
+    }
+  }
+
+  /* Desktop icon clicks (single click opens, like a quick demo) */
+  document.querySelectorAll('.icon[data-app]').forEach(icon => {
+    icon.addEventListener('click', () => {
+      document.querySelectorAll('.icon').forEach(i => i.classList.remove('selected'));
+      icon.classList.add('selected');
+      toggleApp(icon.dataset.app);
+    });
+  });
+
+  /* Start menu tile clicks */
+  document.querySelectorAll('.tile[data-app]').forEach(tile => {
+    tile.addEventListener('click', () => toggleApp(tile.dataset.app));
+  });
+
+  /* Taskbar running indicator */
+  function syncTaskbar() {
+    document.querySelectorAll('.task-btn[data-app]').forEach(btn => {
+      const id = appMap[btn.dataset.app];
+      const el = id ? document.getElementById(id) : null;
+      if (el && el.classList.contains('open')) {
+        btn.classList.add('running');
+      } else {
+        btn.classList.remove('running');
+      }
+    });
+  }
+
+  /* ---------------- Start menu ---------------- */
+  function toggleStart() {
+    document.getElementById('startMenu').classList.toggle('open');
+    document.getElementById('powerMenu').classList.remove('open');
+  }
+  function closeStartMenu() {
+    document.getElementById('startMenu').classList.remove('open');
+  }
+
+  document.getElementById('desktop').addEventListener('click', function(e) {
+    if (e.target === this) {
+      closeStartMenu();
+      document.getElementById('powerMenu').classList.remove('open');
+      document.querySelectorAll('.icon').forEach(i => i.classList.remove('selected'));
+    }
+  });
+
+  function filterTiles(query) {
+    const q = query.toLowerCase();
+    document.querySelectorAll('.tile[data-name]').forEach(tile => {
+      tile.style.display = tile.dataset.name.includes(q) ? '' : 'none';
+    });
+  }
+
+  /* ---------------- Power menu ---------------- */
+  function togglePowerMenu(e) {
+    e.stopPropagation();
+    document.getElementById('powerMenu').classList.toggle('open');
+  }
+
+  function doSleep() {
+    notify('Sleep', 'Display would turn off now.');
+    document.getElementById('powerMenu').classList.remove('open');
+    closeStartMenu();
+  }
+
+  function doShutdown() {
+    document.getElementById('powerMenu').classList.remove('open');
+    closeStartMenu();
+    const overlay = document.getElementById('shutdownOverlay');
+    const text = document.getElementById('shutdownText');
+    const spinner = document.getElementById('shutdownSpinner');
+    const bootBtn = document.getElementById('bootBtn');
+    text.textContent = 'Shutting down...';
+    spinner.style.display = 'block';
+    bootBtn.style.display = 'none';
+    overlay.classList.add('active');
+    setTimeout(() => {
+      spinner.style.display = 'none';
+      text.textContent = 'PC is off';
+      bootBtn.style.display = 'inline-block';
+    }, 1800);
+  }
+
+  function doRestart() {
+    document.getElementById('powerMenu').classList.remove('open');
+    closeStartMenu();
+    const overlay = document.getElementById('shutdownOverlay');
+    const text = document.getElementById('shutdownText');
+    const spinner = document.getElementById('shutdownSpinner');
+    const bootBtn = document.getElementById('bootBtn');
+    text.textContent = 'Restarting...';
+    spinner.style.display = 'block';
+    bootBtn.style.display = 'none';
+    overlay.classList.add('active');
+    setTimeout(() => { rebootSystem(); }, 2200);
+  }
+
+  function rebootSystem() {
+    document.getElementById('shutdownOverlay').classList.remove('active');
+    document.querySelectorAll('.app-window').forEach(w => {
+      w.classList.remove('open', 'minimized', 'maximized');
+    });
+    syncTaskbar();
+  }
+
+  /* ---------------- Notifications ---------------- */
+  let toastTimer;
+  function notify(title, body) {
+    const toast = document.getElementById('toast');
+    document.getElementById('toastTitle').textContent = title;
+    document.getElementById('toastBody').textContent = body;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 3200);
+  }
+
+  /* ---------------- Dragging windows ---------------- */
+  document.querySelectorAll('[data-drag]').forEach(bar => {
+    let dragging = false, offsetX = 0, offsetY = 0, winEl;
+
+    bar.addEventListener('mousedown', (e) => {
+      winEl = document.getElementById(bar.dataset.drag);
+      if (winEl.classList.contains('maximized')) return;
+      bringToFront(winEl);
+      dragging = true;
+      const rect = winEl.getBoundingClientRect();
+      offsetX = e.clientX - rect.left;
+      offsetY = e.clientY - rect.top;
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!dragging) return;
+      let x = e.clientX - offsetX;
+      let y = e.clientY - offsetY;
+      x = Math.max(0, Math.min(window.innerWidth - 100, x));
+      y = Math.max(0, Math.min(window.innerHeight - 80, y));
+      winEl.style.left = x + 'px';
+      winEl.style.top = y + 'px';
+    });
+
+    document.addEventListener('mouseup', () => { dragging = false; });
+
+    /* also bring to front + register click-to-focus on the window itself */
+    bar.addEventListener('click', () => {
+      winEl = document.getElementById(bar.dataset.drag);
+      bringToFront(winEl);
+    });
+  });
+
+  document.querySelectorAll('.app-window').forEach(win => {
+    win.addEventListener('mousedown', () => bringToFront(win));
+  });
+
+  /* ---------------- Calculator ---------------- */
+  let calcExpr = '';
+  function calcInput(val) {
+    calcExpr += val;
+    document.getElementById('calcDisplay').textContent = calcExpr;
+  }
+  function calcClear() {
+    calcExpr = '';
+    document.getElementById('calcDisplay').textContent = '0';
+  }
+  function calcEquals() {
+    try {
+      if (!/^[0-9+\-*/.() ]+$/.test(calcExpr)) throw new Error('invalid');
+      const result = Function('"use strict"; return (' + calcExpr + ')')();
+      document.getElementById('calcDisplay').textContent = result;
+      calcExpr = String(result);
+    } catch (e) {
+      document.getElementById('calcDisplay').textContent = 'Error';
+      calcExpr = '';
+    }
+  }
+
+  /* ---------------- Settings toggles ---------------- */
+  function toggleSetting(btn, cb) {
+    btn.classList.toggle('on');
+    if (cb) cb(btn.classList.contains('on'));
+  }
+
+  function themeChange(isDark) {
+    if (isDark) {
+      document.documentElement.style.setProperty('--win-bg', '#202020');
+      document.documentElement.style.setProperty('--text', '#f3f3f3');
+      notify('Settings', 'Dark mode turned on.');
+    } else {
+      document.documentElement.style.setProperty('--win-bg', '#f3f3f3');
+      document.documentElement.style.setProperty('--text', '#1a1a1a');
+      notify('Settings', 'Light mode turned on.');
+    }
+  }
+
+  function setAccent(color, el) {
+    document.documentElement.style.setProperty('--accent', color);
+    document.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
+    el.classList.add('selected');
+    notify('Settings', 'Accent color updated.');
+  }
+
+  /* ---------------- Live clock ---------------- */
+  function updateClock() {
+    const now = new Date();
+    let h = now.getHours();
+    const m = String(now.getMinutes()).padStart(2, '0');
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    const date = (now.getMonth() + 1) + '/' + now.getDate() + '/' + now.getFullYear();
+    document.getElementById('clock').innerHTML = h + ':' + m + ' ' + ampm + '<br>' + date;
+  }
+  updateClock();
+  setInterval(updateClock, 1000 * 30);
+
+  /* ---------------- Keyboard shortcuts ---------------- */
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeStartMenu();
+      document.getElementById('powerMenu').classList.remove('open');
+    }
+  });
+</script>
+
+</body>
+</html>
